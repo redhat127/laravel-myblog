@@ -10,7 +10,7 @@ export type UsersTable = {
 };
 
 export type UserInertiaSharedProps = {
-  user: { data: Pick<UsersTable, 'id' | 'name' | 'email' | 'email_verified_at' | 'created_at' | 'updated_at' | 'avatar'> } | null;
+  user: { data: Pick<UsersTable, 'name' | 'email' | 'avatar'> } | null;
 };
 
 export type FlashMessageInertiaSharedProps = {

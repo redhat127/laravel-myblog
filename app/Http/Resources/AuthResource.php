@@ -15,12 +15,8 @@ class AuthResource extends JsonResource
     public function toArray(Request $request): array
     {
         return $this->only([
-            'id',
             'name',
             'email',
-            'email_verified_at',
-            'created_at',
-            'updated_at',
             'avatar',
         ]);
     }
