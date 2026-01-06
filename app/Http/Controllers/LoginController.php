@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
@@ -28,7 +30,24 @@ class LoginController extends Controller
             ->first();
 
         if ($user && Hash::check($credentials['password'], $user->password)) {
-            Auth::login($user, $validated['remember_me']);
+            Auth::login($user);
+
+            if ($validated['remember_me']) {
+                $plainToken = Str::random(64);
+
+                request()->user()->rememberTokens()->create([
+                    'token' => hash('sha256', $plainToken),
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent(),
+                    'last_used_at' => now(),
+                ]);
+
+                Cookie::queue(
+                    'remember_device',
+                    $plainToken,
+                    60 * 24 * 30 // 30 days
+                );
+            }
 
             request()->session()->regenerate();
 

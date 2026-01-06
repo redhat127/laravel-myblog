@@ -26,4 +26,14 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function getRememberTokenName()
+    {
+        return null;
+    }
+
+    public function rememberTokens()
+    {
+        return $this->hasMany(RememberToken::class);
+    }
 }
