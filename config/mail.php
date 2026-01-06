@@ -112,6 +112,7 @@ return [
 
     'from' => [
         'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
+        'address-noreply' => env('MAIL_FROM_ADDRESS_NOREPLY', 'no-reply@example.com'),
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 

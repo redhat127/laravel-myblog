@@ -8,6 +8,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Cookie;
+use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable
 {
@@ -24,6 +26,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'password_changed_at' => 'datetime',
         ];
     }
 
@@ -35,5 +38,24 @@ class User extends Authenticatable
     public function rememberTokens()
     {
         return $this->hasMany(RememberToken::class);
+    }
+
+    public function resetPassword()
+    {
+        return $this->hasOne(ResetPassword::class);
+    }
+
+    public function logoutAllDevices()
+    {
+        DB::table('sessions')->where('user_id', $this->id)->delete();
+
+        $this->deleteAllRememberDevice();
+    }
+
+    public function deleteAllRememberDevice()
+    {
+        RememberToken::where('user_id', $this->id)->delete();
+
+        Cookie::queue(Cookie::forget('remember_device'));
     }
 }
