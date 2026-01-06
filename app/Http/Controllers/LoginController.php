@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\CustomRateLimiter;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Hash;
@@ -18,11 +19,27 @@ class LoginController extends Controller
 
     public function post()
     {
+        $ipKey = 'auth.login.ip.'.request()->ip();
+
+        if (CustomRateLimiter::tooManyAttempts($ipKey, maxAttempts: 30)) {
+            return CustomRateLimiter::response($ipKey);
+        }
+
         $validated = request()->validate([
             'email' => ['bail', 'required', 'string', 'email', 'max:50'],
             'password' => ['bail', 'required', 'string', 'min:1', 'max:50'],
             'remember_me' => ['bail', 'required', 'boolean'],
         ]);
+
+        $email = strtolower($validated['email']);
+        $key = 'auth.login.post.'
+            .request()->ip()
+            .'.'
+            .hash('sha256', $email);
+
+        if (CustomRateLimiter::tooManyAttempts($key, maxAttempts: 5)) {
+            return CustomRateLimiter::response($key);
+        }
 
         $credentials = collect($validated)->except('remember_me')->all();
 
@@ -50,6 +67,8 @@ class LoginController extends Controller
             }
 
             request()->session()->regenerate();
+
+            CustomRateLimiter::clear($key);
 
             return redirect()->intended()
                 ->with('flashMessage', [

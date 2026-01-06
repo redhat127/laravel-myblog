@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\Auth\YourPasswordChangedMail;
 use App\Models\User;
+use App\Services\CustomRateLimiter;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 
@@ -21,6 +22,16 @@ class ChangePasswordController extends Controller
             'token' => ['bail', 'required', 'string', 'min:1', 'max:50'],
             'newPassword' => ['bail', 'required', 'string', 'min:10', 'max:50'],
         ]);
+
+        $email = strtolower($validated['email']);
+        $key = 'auth.change-password.post.'
+            .request()->ip()
+            .'.'
+            .hash('sha256', $email);
+
+        if (CustomRateLimiter::tooManyAttempts($key)) {
+            return CustomRateLimiter::response($key);
+        }
 
         $user = User::whereEmail($validated['email'])->first();
 
@@ -52,6 +63,8 @@ class ChangePasswordController extends Controller
                     name: $user->name,
                     password_changed_at: $user->password_changed_at
                 ));
+
+                CustomRateLimiter::clear($key);
 
                 return redirect()->route('auth.login.get')
                     ->with('flashMessage', [

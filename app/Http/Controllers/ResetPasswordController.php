@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\Auth\ResetPasswordMail;
 use App\Models\User;
+use App\Services\CustomRateLimiter;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -19,6 +20,16 @@ class ResetPasswordController extends Controller
         $validated = request()->validate([
             'email' => ['bail', 'required', 'string', 'email', 'max:50'],
         ]);
+
+        $email = strtolower($validated['email']);
+        $key = 'auth.reset-password.post.'
+            .request()->ip()
+            .'.'
+            .hash('sha256', $email);
+
+        if (CustomRateLimiter::tooManyAttempts($key)) {
+            return CustomRateLimiter::response($key);
+        }
 
         $email = $validated['email'];
 
