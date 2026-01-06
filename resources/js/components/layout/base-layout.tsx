@@ -14,9 +14,15 @@ const useIsAuthPage = () => {
   return component.startsWith('auth/');
 };
 
+const useIsErrorPage = () => {
+  const { component } = usePage();
+  return component === 'error';
+};
+
 export const BaseLayout = ({ children }: { children: ReactNode }) => {
   const user = useUser();
   const isAuthPage = useIsAuthPage();
+  const isErrorPage = useIsErrorPage();
   const flashMessage = useFlashMessage();
   useEffect(() => {
     if (flashMessage) {
@@ -25,7 +31,7 @@ export const BaseLayout = ({ children }: { children: ReactNode }) => {
   }, [flashMessage]);
   return (
     <>
-      {!isAuthPage && (
+      {!isAuthPage && !isErrorPage && (
         <header className="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b p-4 px-8">
           <div></div>
           {user ? (
