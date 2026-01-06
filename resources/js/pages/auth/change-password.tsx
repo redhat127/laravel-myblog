@@ -1,6 +1,7 @@
 import { ChangePasswordForm } from '@/components/form/change-password-form';
 import { BaseLayout } from '@/components/layout/base-layout';
 import { CenteredLayout } from '@/components/layout/centered-layout';
+import { TurnstileProvider } from '@/components/turnstile-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { pageTitle } from '@/lib/utils';
@@ -24,7 +25,9 @@ export default function ChangePassword() {
           <CardDescription>Enter your email address and the reset token to choose a new password</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <ChangePasswordForm />
+          <TurnstileProvider>
+            <ChangePasswordForm />
+          </TurnstileProvider>
           <Link href={login.get()} className="inline-block text-sm underline underline-offset-4">
             Back to login
           </Link>

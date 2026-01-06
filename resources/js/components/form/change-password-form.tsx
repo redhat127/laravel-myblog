@@ -8,6 +8,7 @@ import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import z from 'zod';
+import { Turnstile, useTurnstile } from '../turnstile-provider';
 
 const changePasswordSchema = z.object({
   email: z.email('valid email is required.').max(50, 'email is more than 50 characters.'),
@@ -29,29 +30,42 @@ export const ChangePasswordForm = () => {
     handleSubmit,
     formState: { isSubmitting },
   } = form;
+  const { token, reset } = useTurnstile();
   const [isPending, setIsPending] = useState(false);
   const isFormDisabled = isSubmitting || isPending;
   return (
     <form
       onSubmit={handleSubmit((data) => {
-        router.post(ChangePasswordController.post(), data, {
-          onBefore() {
-            setIsPending(true);
+        router.post(
+          ChangePasswordController.post(),
+          {
+            ...data,
+            'cf-turnstile-response': token,
           },
-          onFinish() {
-            setIsPending(false);
+          {
+            onBefore() {
+              if (!token) return false;
+              setIsPending(true);
+            },
+            onFinish() {
+              setIsPending(false);
+              reset();
+            },
+            onError(error) {
+              showServerValidationError(error);
+            },
           },
-          onError(error) {
-            showServerValidationError(error);
-          },
-        });
+        );
       })}
     >
       <FieldGroup className="gap-4">
         <TextInput label="Email" control={control} name="email" inputProps={{ type: 'email' }} />
         <TextInput label="Token" control={control} name="token" />
         <TextInput label="New Password" control={control} name="newPassword" inputProps={{ type: 'password' }} />
-        <SubmitBtn disabled={isFormDisabled}>Change Password</SubmitBtn>
+        <Turnstile />
+        <SubmitBtn isLoading={isFormDisabled} disabled={isFormDisabled || !token}>
+          Change Password
+        </SubmitBtn>
       </FieldGroup>
     </form>
   );

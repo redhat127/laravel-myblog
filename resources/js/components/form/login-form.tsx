@@ -9,6 +9,7 @@ import z from 'zod';
 import { CheckboxInput } from '../checkbox-input';
 import { SubmitBtn } from '../submit-btn';
 import { TextInput } from '../text-input';
+import { Turnstile, useTurnstile } from '../turnstile-provider';
 import { FieldGroup } from '../ui/field';
 
 const loginSchema = z.object({
@@ -31,22 +32,32 @@ export const LoginForm = () => {
     handleSubmit,
     formState: { isSubmitting },
   } = form;
+  const { token, reset } = useTurnstile();
   const [isPending, setIsPending] = useState(false);
   const isFormDisabled = isSubmitting || isPending;
   return (
     <form
       onSubmit={handleSubmit((data) => {
-        router.post(LoginController.post(), data, {
-          onBefore() {
-            setIsPending(true);
+        router.post(
+          LoginController.post(),
+          {
+            ...data,
+            'cf-turnstile-response': token,
           },
-          onFinish() {
-            setIsPending(false);
+          {
+            onBefore() {
+              if (!token) return false;
+              setIsPending(true);
+            },
+            onFinish() {
+              setIsPending(false);
+              reset();
+            },
+            onError(error) {
+              showServerValidationError(error);
+            },
           },
-          onError(error) {
-            showServerValidationError(error);
-          },
-        });
+        );
       })}
     >
       <FieldGroup className="gap-4">
@@ -58,7 +69,10 @@ export const LoginForm = () => {
           </Link>
         </div>
         <CheckboxInput label="Remember me?" control={control} name="remember_me" />
-        <SubmitBtn disabled={isFormDisabled}>Login</SubmitBtn>
+        <Turnstile />
+        <SubmitBtn isLoading={isFormDisabled} disabled={isFormDisabled || !token}>
+          Login
+        </SubmitBtn>
       </FieldGroup>
     </form>
   );

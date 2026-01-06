@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import z from 'zod';
 import { SubmitBtn } from '../submit-btn';
 import { TextInput } from '../text-input';
+import { Turnstile, useTurnstile } from '../turnstile-provider';
 import { FieldGroup } from '../ui/field';
 
 const resetPasswordSchema = z.object({
@@ -25,28 +26,41 @@ export const ResetPasswordForm = () => {
     handleSubmit,
     formState: { isSubmitting },
   } = form;
+  const { token, reset } = useTurnstile();
   const [isPending, setIsPending] = useState(false);
   const isFormDisabled = isSubmitting || isPending;
   return (
     <form
       onSubmit={handleSubmit((data) => {
-        router.post(ResetPasswordController.post(), data, {
-          preserveState: 'errors',
-          onBefore() {
-            setIsPending(true);
+        router.post(
+          ResetPasswordController.post(),
+          {
+            ...data,
+            'cf-turnstile-response': token,
           },
-          onFinish() {
-            setIsPending(false);
+          {
+            preserveState: 'errors',
+            onBefore() {
+              if (!token) return false;
+              setIsPending(true);
+            },
+            onFinish() {
+              setIsPending(false);
+              reset();
+            },
+            onError(error) {
+              showServerValidationError(error);
+            },
           },
-          onError(error) {
-            showServerValidationError(error);
-          },
-        });
+        );
       })}
     >
       <FieldGroup className="gap-4">
         <TextInput label="Email" control={control} name="email" inputProps={{ type: 'email' }} />
-        <SubmitBtn disabled={isFormDisabled}>Reset Password</SubmitBtn>
+        <Turnstile />
+        <SubmitBtn isLoading={isFormDisabled} disabled={isFormDisabled || !token}>
+          Reset Password
+        </SubmitBtn>
       </FieldGroup>
     </form>
   );

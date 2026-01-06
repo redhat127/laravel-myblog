@@ -1,6 +1,7 @@
 import { LoginForm } from '@/components/form/login-form';
 import { BaseLayout } from '@/components/layout/base-layout';
 import { CenteredLayout } from '@/components/layout/centered-layout';
+import { TurnstileProvider } from '@/components/turnstile-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { pageTitle } from '@/lib/utils';
@@ -23,7 +24,9 @@ export default function Login() {
           <CardDescription>Use your email and password to login</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <LoginForm />
+          <TurnstileProvider>
+            <LoginForm />
+          </TurnstileProvider>
           <Button asChild variant="outline" className="w-full">
             <Link href={home()}>
               <ArrowRight />

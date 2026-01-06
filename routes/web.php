@@ -4,6 +4,7 @@ use App\Http\Controllers\ChangePasswordController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\LogoutController;
 use App\Http\Controllers\ResetPasswordController;
+use App\Http\Middleware\ValidateTurnstile;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -20,7 +21,8 @@ Route::middleware('guest')
                     ->controller(LoginController::class)
                     ->group(function () {
                         Route::get('/', 'get')->name('get');
-                        Route::post('/', 'post')->name('post');
+                        Route::post('/', 'post')->name('post')
+                            ->middleware(ValidateTurnstile::class);
                     });
 
                 Route::prefix('logout')
@@ -37,7 +39,8 @@ Route::middleware('guest')
                     ->controller(ResetPasswordController::class)
                     ->group(function () {
                         Route::get('/', 'get')->name('get');
-                        Route::post('/', 'post')->name('post');
+                        Route::post('/', 'post')->name('post')
+                            ->middleware(ValidateTurnstile::class);
                     });
 
                 Route::prefix('change-password')
@@ -45,7 +48,8 @@ Route::middleware('guest')
                     ->controller(ChangePasswordController::class)
                     ->group(function () {
                         Route::get('/', 'get')->name('get');
-                        Route::post('/', 'post')->name('post');
+                        Route::post('/', 'post')->name('post')
+                            ->middleware(ValidateTurnstile::class);
                     });
             });
     });

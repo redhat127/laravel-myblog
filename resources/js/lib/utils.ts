@@ -79,3 +79,5 @@ export function getContrastColor(h: number, s: number, l: number): string {
   // Return white for dark backgrounds, black for light backgrounds
   return luminance > 0.5 ? '#000000' : '#ffffff';
 }
+
+export const appInProduction = () => import.meta.env.PROD;

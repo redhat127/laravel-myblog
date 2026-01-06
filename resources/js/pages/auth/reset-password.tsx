@@ -1,6 +1,7 @@
 import { ResetPasswordForm } from '@/components/form/reset-password-form';
 import { BaseLayout } from '@/components/layout/base-layout';
 import { CenteredLayout } from '@/components/layout/centered-layout';
+import { TurnstileProvider } from '@/components/turnstile-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { pageTitle } from '@/lib/utils';
@@ -24,7 +25,9 @@ export default function ResetPassword() {
           <CardDescription>Enter your email address and we will send you a token to reset your password</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <ResetPasswordForm />
+          <TurnstileProvider>
+            <ResetPasswordForm />
+          </TurnstileProvider>
           <Link href={login.get()} className="inline-block text-sm underline underline-offset-4">
             Back to login
           </Link>
