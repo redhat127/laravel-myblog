@@ -2,7 +2,7 @@ import { useFlashMessage } from '@/hooks/use-flash-message';
 import { useUser } from '@/hooks/use-user';
 import auth from '@/routes/auth';
 import { Link, usePage } from '@inertiajs/react';
-import { Key } from 'lucide-react';
+import { User } from 'lucide-react';
 import { ReactNode, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
@@ -37,10 +37,9 @@ export const BaseLayout = ({ children }: { children: ReactNode }) => {
           {user ? (
             <UserDropdown />
           ) : (
-            <Button asChild variant={'outline'}>
+            <Button asChild variant={'outline'} size={'icon-sm'}>
               <Link href={auth.login.get()}>
-                <Key />
-                Login
+                <User />
               </Link>
             </Button>
           )}
