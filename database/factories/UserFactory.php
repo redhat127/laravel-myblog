@@ -22,6 +22,7 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => 'password123456',
             'remember_token' => null,
+            'avatar' => null,
         ];
     }
 }
