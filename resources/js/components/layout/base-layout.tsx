@@ -1,10 +1,12 @@
 import { useFlashMessage } from '@/hooks/use-flash-message';
 import { useUser } from '@/hooks/use-user';
+import { cn } from '@/lib/utils';
 import auth from '@/routes/auth';
 import { Link, usePage } from '@inertiajs/react';
 import { User } from 'lucide-react';
 import { ReactNode, useEffect } from 'react';
 import { toast } from 'sonner';
+import { Sidebar } from '../sidebar';
 import { Button } from '../ui/button';
 import { Toaster } from '../ui/sonner';
 import { UserDropdown } from '../user-dropdown';
@@ -32,7 +34,7 @@ export const BaseLayout = ({ children }: { children: ReactNode }) => {
   return (
     <>
       {!isAuthPage && !isErrorPage && (
-        <header className="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b p-4 px-8">
+        <header className="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b p-4 px-8 dark:bg-black">
           <div></div>
           {user ? (
             <UserDropdown />
@@ -45,7 +47,12 @@ export const BaseLayout = ({ children }: { children: ReactNode }) => {
           )}
         </header>
       )}
-      <main>
+      {user && <Sidebar />}
+      <main
+        className={cn({
+          'mt-16 mb-8 ml-16 p-4 px-8': user,
+        })}
+      >
         {children}
         <Toaster position="top-center" closeButton duration={8000} expand />
       </main>

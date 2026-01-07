@@ -58,4 +58,9 @@ class User extends Authenticatable
 
         Cookie::queue(Cookie::forget('remember_device'));
     }
+
+    public function posts()
+    {
+        return $this->hasMany(Post::class);
+    }
 }

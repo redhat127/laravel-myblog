@@ -3,6 +3,7 @@
 use App\Http\Controllers\ChangePasswordController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\LogoutController;
+use App\Http\Controllers\PostController;
 use App\Http\Controllers\ResetPasswordController;
 use App\Http\Middleware\ValidateTurnstile;
 use Illuminate\Support\Facades\Route;
@@ -51,5 +52,17 @@ Route::middleware('guest')
                         Route::post('/', 'post')->name('post')
                             ->middleware(ValidateTurnstile::class);
                     });
+            });
+    });
+
+Route::middleware('auth')
+    ->group(function () {
+        Route::prefix('post')
+            ->name('post.')
+            ->controller(PostController::class)
+            ->group(function () {
+                Route::get('/', 'all')->name('all');
+                Route::get('/create', 'create')->name('create');
+                Route::post('/create', 'store')->name('store');
             });
     });

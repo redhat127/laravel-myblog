@@ -9,6 +9,21 @@ export type UsersTable = {
   password_changed_at: string | null;
 };
 
+export type PostsTable = {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  body: string;
+  status: 'draft' | 'published' | 'scheduled';
+  publish_date: string | null;
+  featured_image: string | null;
+  user_id: string;
+  deleted_at: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+};
+
 export type UserInertiaSharedProps = {
   user: { data: Pick<UsersTable, 'name' | 'email' | 'avatar'> } | null;
 };
