@@ -62,8 +62,15 @@ Route::middleware('auth')
             ->controller(PostController::class)
             ->group(function () {
                 Route::get('/', 'all')->name('all');
+
                 Route::get('/create', 'create')->name('create');
-                Route::post('/create', 'store')->name('store');
-                Route::post('/upload-featured-image', 'uploadFeaturedImage')->name('uploadFeaturedImage');
+                Route::post('/{postId}/upload-featured-image', 'uploadFeaturedImage')
+                    ->whereUlid('postId')->name('uploadFeaturedImage');
+                Route::delete('/{postId}/delete-featured-image', 'deleteFeaturedImage')
+                    ->whereUlid('postId')->name('deleteFeaturedImage');
+                Route::get('/{postId}', 'edit')
+                    ->whereUlid('postId')->name('edit');
+                Route::patch('/{postId}', 'update')
+                    ->whereUlid('postId')->name('update');
             });
     });

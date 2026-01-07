@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\PostResource;
+use App\Models\Post;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -17,15 +19,47 @@ class PostController extends Controller
 
     public function create()
     {
-        return inertia('post/create');
+        $title = 'Untitled Post';
+
+        $post = Auth::user()->posts()->create([
+            'title' => $title,
+            'slug' => Post::generateUniqueSlug($title),
+            'status' => 'draft',
+        ]);
+
+        return redirect()->route('post.edit', [
+            'postId' => $post->id,
+        ])->with('flashMessage', [
+            'type' => 'success',
+            'text' => 'Post has been created. you can now update it.',
+        ]);
     }
 
-    public function store()
+    public function edit(string $postId)
     {
+        $post = Post::findOrFail($postId);
+
+        if ($post->user_id !== Auth::id()) {
+            abort(404);
+        }
+
+        return inertia('post/edit', [
+            'post' => PostResource::make($post),
+        ]);
+    }
+
+    public function update(string $postId)
+    {
+        $post = Post::findOrFail($postId);
+
+        if ($post->user_id !== Auth::id()) {
+            abort(404);
+        }
+
         $validated = request()->validate([
-            'title' => ['bail', 'required', 'string', 'min:10', 'max:100'],
+            'title' => ['bail', 'nullable', 'string', 'min:10', 'max:100'],
             'excerpt' => ['bail', 'nullable', 'string', 'max:300'],
-            'body' => ['bail', 'required', 'string', 'min:100', 'max:10000'],
+            'body' => ['bail', 'nullable', 'string', 'min:100', 'max:10000'],
             'status' => ['bail', 'required', 'string', Rule::in('draft', 'published', 'scheduled')],
             'publish_date' => [
                 'bail',
@@ -38,19 +72,24 @@ class PostController extends Controller
                     }
                 },
             ],
-            'featured_image' => ['bail', 'nullable', 'string'],
         ]);
 
-        Auth::user()->posts()->create($validated);
+        $post->update($validated);
 
-        return redirect()->route('post.all')->with('flashMessage', [
+        return back()->with('flashMessage', [
             'type' => 'success',
-            'text' => 'Post has been created.',
+            'text' => 'Post has been updated.',
         ]);
     }
 
-    public function uploadFeaturedImage()
+    public function uploadFeaturedImage(string $postId)
     {
+        $post = Post::findOrFail($postId);
+
+        if ($post->user_id !== Auth::id()) {
+            abort(404);
+        }
+
         request()->validate([
             'file' => [
                 'bail',
@@ -66,7 +105,7 @@ class PostController extends Controller
 
         try {
             $image = Image::read($file)
-                ->cover(300, 300)
+                ->cover(1200, 630)
                 ->toWebp(80);
         } catch (\Exception $e) {
             logger()->error('Featured image processing failed', [
@@ -85,8 +124,39 @@ class PostController extends Controller
 
         Storage::put($path, $image->toString());
 
-        return response()->json([
-            'path' => $path,
+        $prevFeaturedImagePath = $post->featured_image_path;
+
+        $post->update([
+            'featured_image_path' => $path,
         ]);
+
+        if ($prevFeaturedImagePath && Storage::exists($prevFeaturedImagePath)) {
+            Storage::delete($prevFeaturedImagePath);
+        }
+
+        return response()->json([
+            'url' => Storage::url($path),
+        ]);
+    }
+
+    public function deleteFeaturedImage(string $postId)
+    {
+        $post = Post::findOrFail($postId);
+
+        if ($post->user_id !== Auth::id()) {
+            abort(404);
+        }
+
+        $prevFeaturedImagePath = $post->featured_image_path;
+
+        $post->update([
+            'featured_image_path' => null,
+        ]);
+
+        if ($prevFeaturedImagePath && Storage::exists($prevFeaturedImagePath)) {
+            Storage::delete($prevFeaturedImagePath);
+        }
+
+        return back();
     }
 }

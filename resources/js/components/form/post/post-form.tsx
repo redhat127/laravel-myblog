@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FieldGroup } from '@/components/ui/field';
 import { cn, showServerValidationError } from '@/lib/utils';
+import { EditPostProps } from '@/pages/post/edit';
+import { PostsTable } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router, usePage } from '@inertiajs/react';
 import axios, { isCancel } from 'axios';
@@ -35,9 +37,10 @@ const postStatusOptions = [
 
 const postStatusValues = postStatusOptions.map((p) => p.value);
 
-const createPostSchema = z
+const postFormSchema = z
   .object({
     title: z.string().trim().min(10, 'minimum for title is 10 characters.').max(100, 'title is more than 100 characters.'),
+    slug: z.string(),
     excerpt: z.string().trim().max(300, 'excerpt is more than 300 characters.'),
     body: z.string().trim().min(100, 'minimum for body is 100 characters.').max(10_000, 'body is more than 10,000 characters.'),
     status: z.literal(postStatusValues, 'valid status is required.'),
@@ -50,7 +53,6 @@ const createPostSchema = z
         today.setHours(0, 0, 0, 0);
         return date >= today;
       }, 'publish date must be today or in the future.'),
-    featured_image: z.string(),
   })
   .refine(
     (data) => {
@@ -65,15 +67,16 @@ const createPostSchema = z
     },
   );
 
-export const CreatePostForm = () => {
-  const form = useForm<z.infer<typeof createPostSchema>>({
-    resolver: zodResolver(createPostSchema),
+export const PostForm = ({ post: { data: post } }: EditPostProps) => {
+  const form = useForm<z.infer<typeof postFormSchema>>({
+    resolver: zodResolver(postFormSchema),
     defaultValues: {
-      title: '',
-      excerpt: '',
-      body: '',
-      status: 'draft',
-      featured_image: '',
+      title: post.title ?? '',
+      slug: post.slug ?? '',
+      excerpt: post.excerpt ?? '',
+      body: post.body ?? '',
+      status: post.status ?? 'draft',
+      publish_date: new Date(post.publish_date ?? Date.now()),
     },
   });
   const {
@@ -81,17 +84,12 @@ export const CreatePostForm = () => {
     handleSubmit,
     formState: { isSubmitting },
     watch,
-    setValue,
   } = form;
   const [isPending, setIsPending] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'completed' | 'error'>('idle');
   const isFormDisabled = isSubmitting || isPending || uploadStatus === 'uploading';
 
   const status = watch('status');
-
-  const setFeaturedImage = (value: string) => {
-    setValue('featured_image', value);
-  };
 
   useEffect(() => {
     if (status !== 'scheduled') {
@@ -102,8 +100,8 @@ export const CreatePostForm = () => {
   return (
     <form
       onSubmit={handleSubmit((data) => {
-        router.post(
-          PostController.store(),
+        router.patch(
+          PostController.update({ postId: post.id }),
           {
             ...data,
             publish_date: data.publish_date ? format(data.publish_date, 'yyyy-MM-dd') : null,
@@ -127,6 +125,7 @@ export const CreatePostForm = () => {
         <CardContent>
           <FieldGroup className="gap-4">
             <TextInput control={control} name="title" label="Title" />
+            <TextInput control={control} name="slug" label="Slug" inputProps={{ readOnly: true, disabled: true }} />
             <TextareaInput
               control={form.control}
               name="excerpt"
@@ -146,7 +145,7 @@ export const CreatePostForm = () => {
               }}
             />
             <SubmitBtn isLoading={isFormDisabled} disabled={isFormDisabled} className="hidden self-start lg:inline-flex">
-              Create
+              Update
             </SubmitBtn>
           </FieldGroup>
         </CardContent>
@@ -170,17 +169,22 @@ export const CreatePostForm = () => {
                 />
               )}
               <SubmitBtn isLoading={isFormDisabled} disabled={isFormDisabled} className="self-start lg:hidden">
-                Create
+                Update
               </SubmitBtn>
             </FieldGroup>
           </CardContent>
         </Card>
-        <Card className="gap-2">
+        <Card className="gap-0">
           <CardHeader>
             <CardTitle className="text-sm font-medium">Featured Image</CardTitle>
           </CardHeader>
           <CardContent>
-            <UploadFeaturedImage setFeaturedImage={setFeaturedImage} uploadStatus={uploadStatus} setUploadStatus={setUploadStatus} />
+            <UploadFeaturedImage
+              postId={post.id}
+              initialFeaturedImageUrl={post.featured_image_url}
+              uploadStatus={uploadStatus}
+              setUploadStatus={setUploadStatus}
+            />
           </CardContent>
         </Card>
       </div>
@@ -197,17 +201,20 @@ const featuredImageSchema = z
   }, 'only raster images (png, jpg, jpeg, webp) are allowed. svg files are not supported.');
 
 const UploadFeaturedImage = ({
-  setFeaturedImage,
   uploadStatus,
   setUploadStatus,
+  postId,
+  initialFeaturedImageUrl,
 }: {
-  setFeaturedImage(value: string): void;
   uploadStatus: 'idle' | 'uploading' | 'completed' | 'error';
   setUploadStatus: (status: 'idle' | 'uploading' | 'completed' | 'error') => void;
+  postId: PostsTable['id'];
+  initialFeaturedImageUrl: string | null;
 }) => {
   const csrfToken = usePage<{ csrfToken: string }>().props.csrfToken;
   const [imagePreview, setImagePreview] = useState<string>();
   const ref = useRef<HTMLInputElement>(null);
+  const [featuredImageUrl, setFeaturedImageUrl] = useState(initialFeaturedImageUrl);
 
   useEffect(() => {
     if (uploadStatus === 'completed' || uploadStatus === 'error') {
@@ -222,9 +229,35 @@ const UploadFeaturedImage = ({
 
   useEffect(() => {
     return () => {
+      // Only revoke blob URLs
+      if (imagePreview && imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+
+  useEffect(() => {
+    return () => {
       abortControllerRef.current?.abort();
     };
   }, []);
+
+  const handleDelete = () => {
+    // Only revoke blob URLs
+    if (imagePreview && imagePreview.startsWith('blob:')) {
+      URL.revokeObjectURL(imagePreview);
+    }
+    setImagePreview(undefined);
+    setFeaturedImageUrl(null);
+    setUploadStatus('idle');
+    if (ref.current) {
+      ref.current.value = '';
+    }
+
+    router.delete(PostController.deleteFeaturedImage({ postId }), {
+      preserveScroll: true,
+    });
+  };
 
   return (
     <>
@@ -234,22 +267,21 @@ const UploadFeaturedImage = ({
           ref.current?.click();
         }}
         className={cn('group h-48 cursor-pointer overflow-hidden rounded-md transition-colors hover:border-primary', {
-          'border border-dashed': !imagePreview,
+          'border border-dashed': !imagePreview && !featuredImageUrl,
           'cursor-not-allowed': uploadStatus === 'uploading',
         })}
       >
-        {!imagePreview ? (
-          <>
-            <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-center">
-              <p className="text-sm font-medium">Upload Image</p>
-              <p className="text-sm text-muted-foreground group-hover:text-primary">Select an image or browse files</p>
-              <UploadCloudIcon className="-order-1 transition-transform group-hover:-translate-y-1" />
-            </div>
-          </>
-        ) : (
-          <img src={imagePreview} alt="featured image preview" className="h-full w-full object-cover" />
+        {!imagePreview && !featuredImageUrl && (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-center">
+            <p className="text-sm font-medium">Upload Image</p>
+            <p className="text-sm text-muted-foreground group-hover:text-primary">Select an image or browse files</p>
+            <UploadCloudIcon className="-order-1 transition-transform group-hover:-translate-y-1" />
+          </div>
         )}
+        {imagePreview && <img src={imagePreview} alt="featured image preview" className="h-full w-full object-cover" />}
+        {!imagePreview && featuredImageUrl && <img src={featuredImageUrl} alt={'featured image'} className="h-full w-full object-cover" />}
       </div>
+
       {uploadStatus !== 'idle' && (
         <div className="mt-2">
           <p
@@ -264,70 +296,83 @@ const UploadFeaturedImage = ({
           </p>
         </div>
       )}
-      {imagePreview && uploadStatus !== 'uploading' && (
-        <Button
-          type={'button'}
-          variant="outline"
-          className="mt-3 w-full"
-          onClick={() => {
-            if (imagePreview) URL.revokeObjectURL(imagePreview);
-            setImagePreview('');
-            setFeaturedImage('');
-            setUploadStatus('idle');
-            ref.current!.value = '';
-          }}
-        >
+
+      {(imagePreview || featuredImageUrl) && uploadStatus !== 'uploading' && (
+        <Button type={'button'} variant="outline" className="mt-3 w-full" onClick={handleDelete}>
           <Trash2Icon className="dark:text-red-400" />
         </Button>
       )}
+
       <input
-        accept="image/*"
+        accept="image/png,image/jpeg,image/jpg,image/webp"
         type="file"
         className="hidden"
         ref={ref}
         onChange={(e) => {
           abortControllerRef.current?.abort();
-          if (imagePreview) {
+
+          // Only revoke blob URLs
+          if (imagePreview && imagePreview.startsWith('blob:')) {
             URL.revokeObjectURL(imagePreview);
           }
+
           setImagePreview(undefined);
-          setFeaturedImage('');
           setUploadStatus('idle');
+
           const file = e.target.files?.[0];
           e.target.value = '';
+
           if (!file) {
             return;
           }
+
           try {
             const validation = featuredImageSchema.safeParse(file);
+
             if (!validation.success) {
               toast.error(z.flattenError(validation.error).formErrors[0]);
             } else {
               const url = URL.createObjectURL(validation.data);
               setImagePreview(url);
+
               const formData = new FormData();
               formData.append('file', validation.data);
+
               setUploadStatus('uploading');
+
               const controller = new AbortController();
               abortControllerRef.current = controller;
+
               axios
-                .post<{ path: string }>(PostController.uploadFeaturedImage.url(), formData, {
+                .post<{ url: string }>(PostController.uploadFeaturedImage.url({ postId }), formData, {
                   signal: controller.signal,
                   headers: {
                     'X-CSRF-TOKEN': csrfToken,
                   },
                 })
-                .then((res) => {
-                  setFeaturedImage(res.data.path);
+                .then(({ data: { url } }) => {
+                  if (imagePreview?.startsWith('blob:')) {
+                    URL.revokeObjectURL(imagePreview);
+                  }
+
+                  setImagePreview(undefined);
+                  setFeaturedImageUrl(url);
                   setUploadStatus('completed');
                 })
                 .catch((error) => {
                   if (isCancel(error)) {
+                    setUploadStatus('idle');
                     return;
                   }
-                  const message = error.response?.data?.message || 'Upload failed. try again.';
-                  toast.error(message);
+
+                  toast.error('Upload failed. try again.');
                   setUploadStatus('error');
+
+                  if (imagePreview?.startsWith('blob:')) {
+                    URL.revokeObjectURL(imagePreview);
+                  }
+
+                  setImagePreview(undefined);
                 });
             }
           } catch {

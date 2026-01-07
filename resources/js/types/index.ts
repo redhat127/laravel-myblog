@@ -14,10 +14,10 @@ export type PostsTable = {
   title: string;
   slug: string;
   excerpt: string | null;
-  body: string;
+  body: string | null;
   status: 'draft' | 'published' | 'scheduled';
   publish_date: string | null;
-  featured_image: string | null;
+  featured_image_path: string | null;
   user_id: string;
   deleted_at: string | null;
   created_at: string | null;

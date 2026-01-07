@@ -16,10 +16,10 @@ return new class extends Migration
             $table->string('title');
             $table->string('slug')->unique();
             $table->text('excerpt')->nullable();
-            $table->text('body');
+            $table->text('body')->nullable();
             $table->enum('status', ['draft', 'published', 'scheduled']);
             $table->date('publish_date')->nullable();
-            $table->string('featured_image')->nullable();
+            $table->string('featured_image_path')->nullable();
             $table->foreignUlid('user_id')
                 ->constrained()
                 ->cascadeOnDelete();
