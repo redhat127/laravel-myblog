@@ -21,8 +21,7 @@ export const Sidebar = () => {
   if (headerBottom === 0) return null;
   return (
     <div
-      onClick={() => setOpen((prev) => !prev)}
-      className={cn('fixed left-0 z-50 flex h-screen flex-col items-center gap-8 border-r p-4 transition-all dark:bg-black', {
+      className={cn('fixed left-0 z-50 flex h-screen flex-col items-center gap-6 border-r p-4 transition-all dark:bg-black', {
         'w-16': !open,
         'w-64': open,
       })}
@@ -38,6 +37,7 @@ export const Sidebar = () => {
             className={cn({
               'self-end': open,
             })}
+            onClick={() => setOpen((prev) => !prev)}
           >
             {!open ? <PanelRightClose /> : <PanelLeftClose />}
           </Button>
@@ -68,7 +68,7 @@ const ClosedSidebarMenuItem = ({ href, icon, tooltipContent }: { href: string; i
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button asChild variant="outline" size="icon-sm" onClick={(e) => e.stopPropagation()}>
+        <Button asChild variant="outline" size="icon-sm">
           <Link href={href}>{icon}</Link>
         </Button>
       </TooltipTrigger>
