@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Storage;
 
 class DevReset extends Command
 {
@@ -39,6 +40,14 @@ class DevReset extends Command
 
         $this->info('Clearing caches (optimize:clear)...');
         $this->call('optimize:clear');
+
+        $this->info('Removing post featured images...');
+        if (Storage::exists('post/featured_image')) {
+            Storage::deleteDirectory('post/featured_image');
+            $this->info('Post featured images removed.');
+        } else {
+            $this->info('No post featured images to remove.');
+        }
 
         $this->info('Local development environment has been reset.');
 
