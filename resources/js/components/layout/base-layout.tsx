@@ -1,6 +1,8 @@
 import { useFlashMessage } from '@/hooks/use-flash-message';
 import { useUser } from '@/hooks/use-user';
+import { clientEnv } from '@/lib/env';
 import { cn } from '@/lib/utils';
+import { home } from '@/routes';
 import auth from '@/routes/auth';
 import { Link, usePage } from '@inertiajs/react';
 import { User } from 'lucide-react';
@@ -31,11 +33,16 @@ export const BaseLayout = ({ children }: { children: ReactNode }) => {
       toast[flashMessage.type](flashMessage.text);
     }
   }, [flashMessage]);
+  const [firstPart, ...rest] = clientEnv.VITE_APP_NAME.split(' ');
+  const lastPart = rest.join(' ');
   return (
     <>
       {!isAuthPage && !isErrorPage && (
         <header className="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b p-4 px-8 dark:bg-black">
-          <div></div>
+          <Link href={home()} className="space-x-1 text-2xl font-bold">
+            <span className="text-sky-400">{firstPart}</span>
+            <span>{lastPart}</span>
+          </Link>
           {user ? (
             <UserDropdown />
           ) : (
