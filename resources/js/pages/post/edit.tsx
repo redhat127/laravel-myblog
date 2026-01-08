@@ -25,7 +25,9 @@ export default function EditPost(props: EditPostProps) {
             <CardDescription>Write and publish your content. You can save as draft or schedule for later</CardDescription>
           </CardHeader>
         </Card>
-        <PostForm {...props} />
+        <div className="mx-auto max-w-360">
+          <PostForm {...props} />
+        </div>
       </div>
     </>
   );
