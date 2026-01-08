@@ -1,4 +1,4 @@
-import { LoginForm } from '@/components/form/login-form';
+import { LoginForm } from '@/components/form/auth/login-form';
 import { BaseLayout } from '@/components/layout/base-layout';
 import { CenteredLayout } from '@/components/layout/centered-layout';
 import { TurnstileProvider } from '@/components/turnstile-provider';

@@ -1,4 +1,4 @@
-import { ResetPasswordForm } from '@/components/form/reset-password-form';
+import { ResetPasswordForm } from '@/components/form/auth/reset-password-form';
 import { BaseLayout } from '@/components/layout/base-layout';
 import { CenteredLayout } from '@/components/layout/centered-layout';
 import { TurnstileProvider } from '@/components/turnstile-provider';

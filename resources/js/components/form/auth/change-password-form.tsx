@@ -8,7 +8,7 @@ import { router } from '@inertiajs/react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import z from 'zod';
-import { Turnstile, useTurnstile } from '../turnstile-provider';
+import { Turnstile, useTurnstile } from '../../turnstile-provider';
 
 const changePasswordSchema = z.object({
   email: z.email('valid email is required.').max(50, 'email is more than 50 characters.'),

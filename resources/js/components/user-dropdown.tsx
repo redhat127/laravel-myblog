@@ -1,5 +1,5 @@
 import { useUser } from '@/hooks/use-user';
-import { LogoutForm } from './form/logout-form';
+import { LogoutForm } from './form/auth/logout-form';
 import {
   DropdownMenu,
   DropdownMenuContent,
