@@ -57,9 +57,9 @@ class PostController extends Controller
         }
 
         $validated = request()->validate([
-            'title' => ['bail', 'nullable', 'string', 'min:10', 'max:100'],
+            'title' => ['bail', 'required', 'string', 'min:10', 'max:100'],
             'excerpt' => ['bail', 'nullable', 'string', 'max:300'],
-            'body' => ['bail', 'nullable', 'string', 'min:100', 'max:10000'],
+            'body' => ['bail', 'nullable', 'string', 'max:10000'],
             'status' => ['bail', 'required', 'string', Rule::in('draft', 'published', 'scheduled')],
             'publish_date' => [
                 'bail',

@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FieldGroup } from '@/components/ui/field';
 import { cn, showServerValidationError } from '@/lib/utils';
 import { EditPostProps } from '@/pages/post/edit';
+import postRoute from '@/routes/post';
 import { PostsTable } from '@/types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router, usePage } from '@inertiajs/react';
@@ -42,7 +43,7 @@ const postFormSchema = z
     title: z.string().trim().min(10, 'minimum for title is 10 characters.').max(100, 'title is more than 100 characters.'),
     slug: z.string(),
     excerpt: z.string().trim().max(300, 'excerpt is more than 300 characters.'),
-    body: z.string().trim().min(100, 'minimum for body is 100 characters.').max(10_000, 'body is more than 10,000 characters.'),
+    body: z.string().trim().max(10_000, 'body is more than 10,000 characters.'),
     status: z.literal(postStatusValues, 'valid status is required.'),
     publish_date: z
       .date()
@@ -98,97 +99,113 @@ export const PostForm = ({ post: { data: post } }: EditPostProps) => {
   }, [status, form]);
 
   return (
-    <form
-      onSubmit={handleSubmit((data) => {
-        router.patch(
-          PostController.update({ postId: post.id }),
-          {
-            ...data,
-            publish_date: data.publish_date ? format(data.publish_date, 'yyyy-MM-dd') : null,
-          },
-          {
-            onBefore() {
-              setIsPending(true);
+    <>
+      <form
+        id="post-form"
+        onSubmit={handleSubmit((data) => {
+          router.patch(
+            PostController.update({ postId: post.id }),
+            {
+              ...data,
+              publish_date: data.publish_date ? format(data.publish_date, 'yyyy-MM-dd') : null,
             },
-            onFinish() {
-              setIsPending(false);
+            {
+              preserveScroll: true,
+              onBefore() {
+                setIsPending(true);
+              },
+              onFinish() {
+                setIsPending(false);
+              },
+              onError(error) {
+                showServerValidationError(error);
+              },
             },
-            onError(error) {
-              showServerValidationError(error);
-            },
-          },
-        );
-      })}
-      className="flex flex-col items-start gap-4 lg:flex-row"
-    >
-      <Card className="w-full flex-1">
-        <CardContent>
-          <FieldGroup className="gap-4">
-            <TextInput control={control} name="title" label="Title" />
-            <TextInput control={control} name="slug" label="Slug" inputProps={{ readOnly: true, disabled: true }} />
-            <TextareaInput
-              control={form.control}
-              name="excerpt"
-              label="Excerpt"
-              textareaProps={{
-                placeholder: 'Brief summary of your post...',
-                className: 'min-h-24',
-              }}
-            />
-            <TextareaInput
-              control={form.control}
-              name="body"
-              label="Body"
-              textareaProps={{
-                placeholder: 'Write your post content...',
-                className: 'min-h-60',
-              }}
-            />
-            <SubmitBtn isLoading={isFormDisabled} disabled={isFormDisabled} className="hidden self-start lg:inline-flex">
-              Update
-            </SubmitBtn>
-          </FieldGroup>
-        </CardContent>
-      </Card>
-      <div className="w-full space-y-4 lg:w-96">
-        <Card>
+          );
+        })}
+        className="flex flex-col items-start gap-4 lg:flex-row"
+      >
+        <Card className="w-full flex-1">
           <CardContent>
             <FieldGroup className="gap-4">
-              <SelectInput control={control} name="status" label="Status" options={postStatusOptions} placeholder="Select status" />
-              {status === 'scheduled' && (
-                <DatePickerInput
-                  control={control}
-                  name="publish_date"
-                  label="Publish Date"
-                  placeholder="Select publish date"
-                  disabledDates={(date) => {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    return date < today;
-                  }}
-                />
-              )}
-              <SubmitBtn isLoading={isFormDisabled} disabled={isFormDisabled} className="self-start lg:hidden">
-                Update
-              </SubmitBtn>
+              <TextInput control={control} name="title" label="Title" />
+              <TextInput control={control} name="slug" label="Slug" inputProps={{ readOnly: true, disabled: true }} />
+              <TextareaInput
+                control={form.control}
+                name="excerpt"
+                label="Excerpt"
+                textareaProps={{
+                  placeholder: 'Brief summary of your post...',
+                  className: 'min-h-24',
+                }}
+              />
+              <TextareaInput
+                control={form.control}
+                name="body"
+                label="Body"
+                textareaProps={{
+                  placeholder: 'Write your post content...',
+                  className: 'min-h-60',
+                }}
+              />
             </FieldGroup>
           </CardContent>
         </Card>
-        <Card className="gap-0">
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Featured Image</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <UploadFeaturedImage
-              postId={post.id}
-              initialFeaturedImageUrl={post.featured_image_url}
-              uploadStatus={uploadStatus}
-              setUploadStatus={setUploadStatus}
-            />
-          </CardContent>
-        </Card>
-      </div>
-    </form>
+        <div className="w-full space-y-4 lg:w-96">
+          <Card>
+            <CardContent>
+              <FieldGroup className="gap-4">
+                <SelectInput control={control} name="status" label="Status" options={postStatusOptions} placeholder="Select status" />
+                {status === 'scheduled' && (
+                  <DatePickerInput
+                    control={control}
+                    name="publish_date"
+                    label="Publish Date"
+                    placeholder="Select publish date"
+                    disabledDates={(date) => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      return date < today;
+                    }}
+                  />
+                )}
+              </FieldGroup>
+            </CardContent>
+          </Card>
+          <Card className="gap-0">
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">Featured Image</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <UploadFeaturedImage
+                postId={post.id}
+                initialFeaturedImageUrl={post.featured_image_url}
+                uploadStatus={uploadStatus}
+                setUploadStatus={setUploadStatus}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </form>
+      <Card className="mt-4">
+        <CardContent>
+          <div className="flex items-center gap-2">
+            <SubmitBtn form="post-form" isLoading={isFormDisabled} disabled={isFormDisabled}>
+              Update
+            </SubmitBtn>
+            <Button
+              type="button"
+              variant={'outline'}
+              onClick={() => {
+                router.get(postRoute.all());
+              }}
+            >
+              Cancel
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </>
   );
 };
 
